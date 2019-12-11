@@ -48,6 +48,7 @@ abstract class ClientRouteTestBattery(name: String)
 
   withResource(JettyScaffold[IO](1, false, testServlet)) { jetty =>
     withResource(clientResource) { client =>
+      println(client)
       val address = jetty.addresses.head
 
       Fragments.foreach(GetRoutes.getPaths.toSeq) {
@@ -123,8 +124,14 @@ abstract class ClientRouteTestBattery(name: String)
     val hs = rec.headers.toList
     for {
       _ <- IO(rec.status must be_==(expected.status))
+//<<<<<<< HEAD
       body <- rec.body.compile.to(Array)
       expBody <- expected.body.compile.to(Array)
+//=======
+ //     _ = rec.body
+  //    body <- rec.body.compile.to[Array]
+   //   expBody <- expected.body.compile.to[Array]
+//>>>>>>> WIP: Add Apache HTTP Client
       _ <- IO(body must_== expBody)
       _ <- IO(expected.headers.foreach { h =>
         h must beOneOf(hs: _*); ()

@@ -22,6 +22,7 @@ lazy val modules: List[ProjectReference] = List(
   blazeServer,
   blazeClient,
   asyncHttpClient,
+  apacheHttpClient,
   jettyClient,
   okHttpClient,
   servlet,
@@ -231,6 +232,16 @@ lazy val asyncHttpClient = libraryProject("async-http-client")
     )
   )
   .dependsOn(core, testing % "test->test", client % "compile;test->test")
+
+  lazy val apacheHttpClient = libraryProject("apache-http-client")
+  .settings(
+    description := "apache http client implementation for http4s clients",
+    libraryDependencies ++= Seq(
+      Http4sPlugin.apacheHttpClient,
+    ),
+    parallelExecution in (Test) := false
+  )
+  .dependsOn(core, theDsl, testing % "test->test", client % "compile -> compile;test->test")
 
 lazy val jettyClient = libraryProject("jetty-client")
   .settings(

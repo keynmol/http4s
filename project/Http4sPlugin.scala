@@ -239,6 +239,7 @@ object Http4sPlugin extends AutoPlugin {
     val vault = "2.0.0"
   }
 
+<<<<<<< HEAD
   lazy val argonaut                         = "io.argonaut"            %% "argonaut"                  % V.argonaut
   lazy val argonautJawn                     = "io.argonaut"            %% "argonaut-jawn"             % V.argonaut
   lazy val asyncHttpClient                  = "org.asynchttpclient"    %  "async-http-client"         % V.asyncHttpClient
@@ -290,6 +291,7 @@ object Http4sPlugin extends AutoPlugin {
   lazy val parboiled                        = "org.http4s"             %% "parboiled"                 % V.parboiledHttp4s
   lazy val quasiquotes                      = "org.scalamacros"        %% "quasiquotes"               % V.quasiquotes
   lazy val scalacheck                       = "org.scalacheck"         %% "scalacheck"                % V.scalacheck
+  lazy val apacheHttpClient = "org.apache.httpcomponents" % "httpclient" % "4.5.10"
   def scalaReflect(sv: String)              = "org.scala-lang"         %  "scala-reflect"             % sv
   lazy val scalatagsApi                     = "com.lihaoyi"            %% "scalatags"                 % V.scalatags
   lazy val scalaXml                         = "org.scala-lang.modules" %% "scala-xml"                 % V.scalaXml
