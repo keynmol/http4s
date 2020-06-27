@@ -5,9 +5,9 @@ package apachehttpclient
 import java.net.URI
 
 import cats.ApplicativeError
-import cats.effect.{ConcurrentEffect, IO, Resource}
+import cats.effect.{ConcurrentEffect, ContextShift, IO, Resource}
 import cats.syntax.all._
-import org.apache.http.client.methods.{CloseableHttpResponse, HttpRequestBase}
+import org.apache.http.client.methods.{CloseableHttpResponse, HttpEntityEnclosingRequestBase, HttpRequestBase}
 import org.apache.http.impl.client.{CloseableHttpClient, HttpClients}
 import org.apache.http.util.EntityUtils
 import org.apache.http.{HttpVersion => JHttpVersion}
@@ -32,11 +32,12 @@ object ApacheHttpClient extends App {
   cm.setMaxTotal(200); // Increase default max connection per route to 20
   cm.setDefaultMaxPerRoute(20);
 
-  def allocate[F[_]](client: CloseableHttpClient)(
+  def allocate[F[_]: ContextShift](client: CloseableHttpClient)(
       implicit M: ConcurrentEffect[F]): F[(Client[F], F[Unit])] = {
     val acquire = M.pure(client).map { apacheClient =>
       Client[F] { req =>
-        val apacheRequest = toApacheRequest(req)
+        val modifiedReq = req.withHeaders(req.headers.filterNot(_.name.value.toLowerCase == "content-length" ))
+        val apacheRequest = toApacheRequest(modifiedReq)
 
         val acquireResponse = apacheRequest.flatMap(r =>
           M.delay {
@@ -79,51 +80,26 @@ object ApacheHttpClient extends App {
 
     }
 
-//    val body =
-
     statusO.map(s => Response(s, headers = newHeaders, httpVersion = version).withEmptyBody)
   }
 
-  // def allocate[F[_]](client: HttpClient = defaultHttpClient())(
-  //     implicit F: ConcurrentEffect[F]): F[(Client[F], F[Unit])] = {
-  //   val acquire = F
-  //     .pure(client)
-  //     .flatTap(client => F.delay { client.start() })
-  //     .map(client =>
-  //       Client[F] { req =>
-  //         Resource.suspend(F.asyncF[Resource[F, Response[F]]] { cb =>
-  //           F.bracket(StreamRequestContentProvider()) { dcp =>
-  //             val jReq = toJettyRequest(client, req, dcp)
-  //             for {
-  //               rl <- ResponseListener(cb)
-  //               _ <- F.delay(jReq.send(rl))
-  //               _ <- dcp.write(req)
-  //             } yield ()
-  //           } { dcp =>
-  //             F.delay(dcp.close())
-  //           }
-  //         })
-  //       })
-  //   val dispose = F
-  //     .delay(client.stop())
-  //     .handleErrorWith(t => F.delay(logger.error(t)("Unable to shut down Jetty client")))
-  //   acquire.map((_, dispose))
-  // }
-
-  def resource[F[_]](client: CloseableHttpClient = HttpClients.createDefault())(
+  def resource[F[_]: ContextShift](client: CloseableHttpClient = HttpClients.createDefault())(
       implicit F: ConcurrentEffect[F]): Resource[F, Client[F]] =
     Resource(allocate[F](client))
 
-  def stream[F[_]](client: CloseableHttpClient = HttpClients.createDefault())(
+  def stream[F[_]: ContextShift](client: CloseableHttpClient = HttpClients.createDefault())(
       implicit F: ConcurrentEffect[F]): fs2.Stream[F, Client[F]] =
     fs2.Stream.resource(resource(client))
 
-  private def toApacheRequest[F[_]](
+  private def toApacheRequest[F[_]: ContextShift](
       request: Request[F]
-  )(implicit F: ApplicativeError[F, Throwable]): F[HttpRequestBase] = {
-    val b = new HttpRequestBase {
+  )(implicit F: ConcurrentEffect[F]): F[HttpRequestBase] = {
+    val b = new HttpEntityEnclosingRequestBase  {
       override def getMethod: String = request.method.name
     }
+
+    b.setEntity(new ApacheClientEntity(request))
+
 
     b.setURI(URI.create(request.uri.renderString))
 
@@ -146,6 +122,8 @@ object ApacheHttpClient extends App {
       b
     }
   }
+
+
 //
   private def test = {
     val dsl = new Http4sDsl[IO] with Http4sClientDsl[IO] {}
@@ -155,7 +133,9 @@ object ApacheHttpClient extends App {
 
     val js = "{}"
 
-    val req = POST(uri).map(_.withBodyStream(EntityEncoder.stringEncoder.toEntity(js).body))
+    val req = POST(uri).map(_.withEntity(js))
+
+    println(req.unsafeRunSync())
 
     implicit val cs = IO.contextShift(scala.concurrent.ExecutionContext.global)
 
@@ -164,9 +144,9 @@ object ApacheHttpClient extends App {
     clientRes.flatMap {client =>
 
       Resource.liftF(req).flatMap(client.run)
-    }.use(IO.pure).unsafeRunSync
+    }.use(response => response.as[String]).unsafeRunSync
   }
 
-  println(test)
+  println(s"Result: $test")
 
 }
