@@ -239,7 +239,6 @@ object Http4sPlugin extends AutoPlugin {
     val vault = "2.0.0"
   }
 
-<<<<<<< HEAD
   lazy val argonaut                         = "io.argonaut"            %% "argonaut"                  % V.argonaut
   lazy val argonautJawn                     = "io.argonaut"            %% "argonaut-jawn"             % V.argonaut
   lazy val asyncHttpClient                  = "org.asynchttpclient"    %  "async-http-client"         % V.asyncHttpClient

@@ -1,3 +1,9 @@
+/*
+ * Copyright 2013-2020 http4s.org
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package org.http4s.client.apachehttpclient
 
 import java.io.{InputStream, OutputStream}
@@ -24,7 +30,7 @@ class ApacheClientEntity[F[_]: ContextShift](req: Request[F])(implicit F: Concur
     println("content is being had (checking headers type)")
 
     req.headers.get(`Content-Type`) match {
-      case Some(h) => new BasicHeader(h.name.value, h.value)
+      case Some(h) => new BasicHeader(h.name.toString, h.value)
       case None => null
     }
   }
@@ -33,7 +39,7 @@ class ApacheClientEntity[F[_]: ContextShift](req: Request[F])(implicit F: Concur
     println("content is being had(checking headers encoding)")
 
     req.headers.get(`Content-Encoding`) match {
-      case Some(h) => new BasicHeader(h.name.value, h.value)
+      case Some(h) => new BasicHeader(h.name.toString, h.value)
       case None => null
     }
   }
